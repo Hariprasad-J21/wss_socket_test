@@ -113,7 +113,7 @@ wss.on("connection", (ws) => {
   });
 });
 function convertPCMToWAV(pcmBuffer, fileName, callback) {
-  const sampleRate = 44100;
+  const sampleRate = 6000;
   const channels = 1;
   const bitDepth = 16;
 
