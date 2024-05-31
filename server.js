@@ -116,8 +116,17 @@ function convertPCMToWAV(pcmBuffer, fileName, callback) {
   const sampleRate = 6000;
   const channels = 1;
   const bitDepth = 16;
+  const amplificationFactor = 10.0; // Amplify the audio by 2 times
 
-  const dataSize = pcmBuffer.length;
+  // Apply amplification
+  const amplifiedBuffer = Buffer.alloc(pcmBuffer.length);
+  for (let i = 0; i < pcmBuffer.length; i += 2) {
+    let sample = pcmBuffer.readInt16LE(i);
+    sample = Math.max(-32768, Math.min(32767, sample * amplificationFactor));
+    amplifiedBuffer.writeInt16LE(sample, i);
+  }
+
+  const dataSize = amplifiedBuffer.length;
   const byteRate = sampleRate * channels * (bitDepth / 8);
   const blockAlign = channels * (bitDepth / 8);
 
@@ -136,7 +145,7 @@ function convertPCMToWAV(pcmBuffer, fileName, callback) {
   header.write("data", 36);
   header.writeUInt32LE(dataSize, 40);
 
-  const wavBuffer = Buffer.concat([header, pcmBuffer]);
+  const wavBuffer = Buffer.concat([header, amplifiedBuffer]);
 
   fs.writeFile(fileName, wavBuffer, (err) => {
     if (err) {
