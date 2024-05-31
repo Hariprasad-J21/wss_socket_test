@@ -113,7 +113,7 @@ wss.on("connection", (ws) => {
   });
 });
 function convertPCMToWAV(pcmBuffer, fileName, callback) {
-  const sampleRate = 6000;
+  const sampleRate = 16000;
   const channels = 1;
   const bitDepth = 16;
   const amplificationFactor = 20.0; // Amplify the audio by 2 times
