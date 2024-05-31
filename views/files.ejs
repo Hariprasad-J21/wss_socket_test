@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Audio Files</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <h1>Uploaded Audio Files</h1>
+    <table>
+      <thead>
+        <tr>
+          <th>Device ID</th>
+          <th>Timestamp</th>
+          <th>Audio File</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% audioFiles.forEach(file => { %>
+        <tr>
+          <td><%= file.deviceId %></td>
+          <td><%= new Date(file.timestamp).toLocaleString() %></td>
+          <td>
+            <audio controls>
+              <source src="<%= file.url %>" type="audio/wav" />
+              Your browser does not support the audio element.
+            </audio>
+          </td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </body>
+</html>

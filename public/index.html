@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebSocket Audio Stream - Mock Frontend</title>
+  </head>
+  <body>
+    <h1>WebSocket Audio Stream - Mock Frontend</h1>
+    <div>
+      <label for="deviceId">Device ID:</label>
+      <input type="text" id="deviceId" placeholder="Enter Device ID" />
+      <button onclick="startStreaming()">Start Streaming</button>
+      <button onclick="stopStreaming()">Stop Streaming</button>
+    </div>
+
+    <script>
+      let ws;
+      let audioStream;
+      let deviceIdSent = false;
+
+      function startStreaming() {
+        const deviceId = document.getElementById("deviceId").value.trim();
+        if (!deviceId) {
+          alert("Please enter a Device ID.");
+          return;
+        }
+
+        ws = new WebSocket("ws://localhost:3000");
+
+        ws.onopen = function () {
+          console.log("WebSocket connection established.");
+          deviceIdSent = false; // Reset device ID sent flag
+        };
+
+        ws.onerror = function (error) {
+          console.error("WebSocket error:", error);
+        };
+
+        ws.onclose = function () {
+          console.log("WebSocket connection closed.");
+        };
+
+        // Start audio stream
+        audioStream = new AudioStream();
+        audioStream.startStream();
+      }
+
+      function stopStreaming() {
+        if (audioStream) {
+          audioStream.stopStream();
+        }
+        if (ws) {
+          ws.send("END_OF_AUDIO_STREAM"); // Send termination message
+          ws.close();
+        }
+      }
+
+      class AudioStream {
+        constructor() {
+          this.audioContext = new (window.AudioContext ||
+            window.webkitAudioContext)();
+          this.scriptProcessor = null;
+          this.mediaStream = null;
+        }
+
+        startStream() {
+          navigator.mediaDevices
+            .getUserMedia({ audio: true })
+            .then((stream) => {
+              this.mediaStream = stream;
+              const audioInput =
+                this.audioContext.createMediaStreamSource(stream);
+              this.scriptProcessor = this.audioContext.createScriptProcessor(
+                4096,
+                1,
+                1
+              );
+
+              this.scriptProcessor.onaudioprocess = (event) => {
+                const inputData = event.inputBuffer.getChannelData(0);
+                const outputData = new Float32Array(inputData);
+
+                // Convert float32 to 16-bit PCM
+                const pcmData = this.float32To16BitPCM(outputData);
+
+                // Send PCM data to the server via WebSocket
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                  if (!deviceIdSent) {
+                    const deviceId = document
+                      .getElementById("deviceId")
+                      .value.trim();
+                    ws.send("START_OF_AUDIO_DATA"); // Send start signal
+                    ws.send(deviceId.toString()); // Send device ID
+                    deviceIdSent = true;
+                  }
+                  ws.send(pcmData.buffer);
+                }
+              };
+
+              audioInput.connect(this.scriptProcessor);
+              this.scriptProcessor.connect(this.audioContext.destination);
+            })
+            .catch((error) => {
+              console.error("Error accessing microphone:", error);
+            });
+        }
+
+        stopStream() {
+          if (this.scriptProcessor) {
+            this.scriptProcessor.disconnect();
+            this.scriptProcessor.onaudioprocess = null;
+          }
+          if (this.mediaStream) {
+            this.mediaStream.getTracks().forEach((track) => track.stop());
+          }
+          if (this.audioContext) {
+            this.audioContext.close();
+          }
+        }
+
+        float32To16BitPCM(buffer) {
+          const output = new Int16Array(buffer.length);
+          for (let i = 0; i < buffer.length; i++) {
+            const s = Math.max(-1, Math.min(1, buffer[i]));
+            output[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+          }
+          return output;
+        }
+      }
+    </script>
+  </body>
+</html>
