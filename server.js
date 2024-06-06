@@ -157,7 +157,7 @@ function convertPCMToWAV(pcmBuffer, fileName, callback) {
 }
 
 function uploadFileToStorage(fileName, deviceId, timestamp) {
-  const timestamp = new Date(
+  const adjustedTimestamp = new Date(
     timestamp.getTime() + 5 * 60 * 60 * 1000 + 0.5 * 60 * 60 * 1000
   );
 
@@ -171,7 +171,7 @@ function uploadFileToStorage(fileName, deviceId, timestamp) {
           contentType: "audio/wav",
           metadata: {
             deviceId,
-            timestamp: timestamp.toISOString(),
+            timestamp: adjustedTimestamp.toISOString(),
           },
         },
       })
