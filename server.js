@@ -157,6 +157,10 @@ function convertPCMToWAV(pcmBuffer, fileName, callback) {
 }
 
 function uploadFileToStorage(fileName, deviceId, timestamp) {
+  const timestamp = new Date(
+    timestamp.getTime() + 5 * 60 * 60 * 1000 + 0.5 * 60 * 60 * 1000
+  );
+
   const readStream = fs.createReadStream(fileName);
 
   const file = bucket.file(fileName);
